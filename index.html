@@ -235,18 +235,23 @@
         .action-button:hover {
             transform: translateY(-3px); 
             box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+            filter: brightness(1.05);
+        }
+        /* Warna baru untuk tombol aksi */
+        .kelola-siswa {
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
         }
         .present-all {
-            background: linear-gradient(135deg, var(--green-pastel), #a0d9a0);
+            background: linear-gradient(135deg, #a1ffce, #faffd1);
         }
         .submit-attendance {
-            background: linear-gradient(135deg, var(--blue-pastel), #8bc6e0);
+            background: linear-gradient(135deg, #84fab0, #8fd3f4);
         }
         .rekap-harian {
-            background: linear-gradient(135deg, var(--yellow-pastel), #f9d976);
+            background: linear-gradient(135deg, #a6c1ee, #fbc2eb);
         }
         .rekap-bulanan {
-            background: linear-gradient(135deg, var(--pink-pastel), #f8b3c4);
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
         }
         .students-grid {
             display: grid; 
@@ -581,6 +586,9 @@
             </div>
             
             <div class="action-buttons">
+                <button class="action-button kelola-siswa" id="btnKelolaSiswa">
+                    <i class="fas fa-users-gear"></i> Kelola Siswa
+                </button>
                 <button class="action-button present-all" id="btnHadirSemua">
                     <i class="fas fa-user-check"></i> Hadir Semua
                 </button>
@@ -722,6 +730,7 @@
             document.getElementById('btnKirimAbsen').addEventListener('click', submitAttendance);
             document.getElementById('btnRekapHarian').addEventListener('click', showRekapHarian);
             document.getElementById('btnRekapBulanan').addEventListener('click', showRekapBulanan);
+            document.getElementById('btnKelolaSiswa').addEventListener('click', showKelolaSiswaModal);
             document.getElementById('closeRekapModal').addEventListener('click', closeRekapModal);
             document.getElementById('rekapModal').addEventListener('click', function(e){
                 if(e.target === this) closeRekapModal();
@@ -785,6 +794,102 @@
                 return parts[0].substring(0,2).toUpperCase();
             }
             return parts.map(part => part[0]).join('').substring(0,2).toUpperCase();
+        }
+
+        // ================= FUNGSI KELOLA SISWA =================
+        function showKelolaSiswaModal() {
+            let modalContent = `
+                <h2>Kelola Daftar Siswa</h2>
+                <div class="rekap-controls">
+                    <input type="text" id="newStudentName" placeholder="Nama siswa baru">
+                    <button id="btnTambahSiswa" class="action-button submit-attendance" style="padding:7px 15px;">
+                        <i class="fas fa-plus"></i> Tambah
+                    </button>
+                </div>
+                <div class="search-container">
+                    <input type="text" id="searchStudent" placeholder="Cari siswa...">
+                </div>
+                <div id="studentsListContainer" style="max-height: 400px; overflow-y: auto; margin-top: 15px;">
+                    ${generateStudentsListHTML()}
+                </div>
+            `;
+
+            showRekapModal(modalContent);
+
+            // Event listeners untuk fungsi kelola siswa
+            document.getElementById('btnTambahSiswa').addEventListener('click', tambahSiswaBaru);
+            document.getElementById('searchStudent').addEventListener('input', filterStudentsList);
+            
+            // Tambahkan event listeners untuk tombol hapus
+            document.querySelectorAll('.delete-student').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    hapusSiswa(parseInt(this.getAttribute('data-index')));
+                });
+            });
+        }
+
+        function generateStudentsListHTML() {
+            let html = '<ul style="list-style-type: none; padding: 0;">';
+            students.forEach((student, index) => {
+                html += `
+                    <li style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                        <span>${student}</span>
+                        <button class="delete-student" data-index="${index}" style="background: #ff6b6b; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; transition: all 0.3s;">
+                            <i class="fas fa-trash"></i> Hapus
+                        </button>
+                    </li>
+                `;
+            });
+            html += '</ul>';
+            return html;
+        }
+
+        function filterStudentsList() {
+            const searchTerm = this.value.toLowerCase();
+            const items = document.querySelectorAll('#studentsListContainer li');
+            
+            items.forEach(item => {
+                const name = item.textContent.toLowerCase();
+                item.style.display = name.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        function tambahSiswaBaru() {
+            const nameInput = document.getElementById('newStudentName');
+            const newName = nameInput.value.trim();
+            
+            if (newName && !students.includes(newName)) {
+                students.push(newName);
+                document.getElementById('studentsListContainer').innerHTML = generateStudentsListHTML();
+                nameInput.value = '';
+                
+                // Tambahkan event listeners untuk tombol hapus yang baru
+                document.querySelectorAll('.delete-student').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        hapusSiswa(parseInt(this.getAttribute('data-index')));
+                    });
+                });
+                
+                // Perbarui tampilan kartu siswa
+                generateStudentCards();
+            }
+        }
+
+        function hapusSiswa(index) {
+            if (confirm(`Apakah Anda yakin ingin menghapus ${students[index]} dari daftar?`)) {
+                students.splice(index, 1);
+                document.getElementById('studentsListContainer').innerHTML = generateStudentsListHTML();
+                
+                // Tambahkan kembali event listeners
+                document.querySelectorAll('.delete-student').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        hapusSiswa(parseInt(this.getAttribute('data-index')));
+                    });
+                });
+                
+                // Perbarui tampilan kartu siswa
+                generateStudentCards();
+            }
         }
 
         // ================= FUNGSI ABSENSI =================
